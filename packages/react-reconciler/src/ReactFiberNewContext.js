@@ -33,7 +33,7 @@ import {
   ClassComponent,
   ClassComponentLazy,
 } from 'shared/ReactWorkTags';
-import {Update} from 'shared/ReactTypeOfSideEffect';
+import {Update} from 'shared/ReactSideEffectTags';
 import {enqueueUpdate, createUpdate, ForceUpdate} from './ReactUpdateQueue';
 
 import invariant from 'shared/invariant';
