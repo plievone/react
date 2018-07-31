@@ -1,7 +1,6 @@
 import React, {Suspense} from 'react';
 import {createResource} from 'react-cache';
 import Spinner from './Spinner';
-import {cache} from '../cache';
 import {fetchUserProfileJSON, fetchUserRepositoriesListJSON} from '../api';
 
 export default function UserPage({id}) {
@@ -24,7 +23,7 @@ export default function UserPage({id}) {
 const UserDetailsResource = createResource(fetchUserProfileJSON);
 
 function UserDetails({id}) {
-  const user = UserDetailsResource.read(cache, id);
+  const user = UserDetailsResource.read(id);
   return (
     <div
       style={{
@@ -113,7 +112,7 @@ const ImageResource = createResource(
 );
 
 function Img({src, alt, ...rest}) {
-  return <img src={ImageResource.read(cache, src)} alt={alt} {...rest} />;
+  return <img src={ImageResource.read(src)} alt={alt} {...rest} />;
 }
 
 function UserPicture({source}) {
@@ -135,7 +134,7 @@ function UserPicture({source}) {
 const UserRepositoriesResource = createResource(fetchUserRepositoriesListJSON);
 
 function Repositories({id}) {
-  const repos = UserRepositoriesResource.read(cache, id);
+  const repos = UserRepositoriesResource.read(id);
   return (
     <ul
       style={{

@@ -1,7 +1,7 @@
 import React, {Fragment, PureComponent} from 'react';
+import {useCache} from 'react-cache';
 import {unstable_createRoot, render} from 'react-dom';
 import {unstable_trace as trace} from 'scheduler/tracing';
-import {cache} from './cache';
 import {
   setFakeRequestTime,
   setPaused,
@@ -43,6 +43,7 @@ class Debugger extends PureComponent {
     waitTime: 0,
     requests: {},
   };
+  cache = useCache();
 
   componentDidMount() {
     setFakeRequestTime(this.state.requestTime * 1000);
@@ -66,7 +67,7 @@ class Debugger extends PureComponent {
 
   handleReset = () => {
     trace('Clear cache', performance.now(), () => {
-      cache.invalidate();
+      this.cache.purge();
       this.setState(state => ({
         requests: {},
       }));

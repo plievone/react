@@ -28,7 +28,8 @@ import {
 import {createCursor, push, pop} from './ReactFiberStack';
 import MAX_SIGNED_31_BIT_INT from './maxSigned31BitInt';
 import {NoWork} from './ReactFiberExpirationTime';
-import {ContextProvider, ClassComponent, Update} from 'shared/ReactWorkTags';
+import {ContextProvider, ClassComponent} from 'shared/ReactWorkTags';
+import {Update} from 'shared/ReactSideEffectTags';
 import {enqueueUpdate, createUpdate, ForceUpdate} from './ReactUpdateQueue';
 
 import invariant from 'shared/invariant';

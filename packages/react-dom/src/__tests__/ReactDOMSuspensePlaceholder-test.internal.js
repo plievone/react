@@ -13,7 +13,6 @@ let React;
 let ReactDOM;
 let Suspense;
 let ReactCache;
-let cache;
 let TextResource;
 
 describe('ReactDOMSuspensePlaceholder', () => {
@@ -24,13 +23,10 @@ describe('ReactDOMSuspensePlaceholder', () => {
     React = require('react');
     ReactDOM = require('react-dom');
     ReactCache = require('react-cache');
+    ReactCache.globalCache.purge();
     Suspense = React.Suspense;
     container = document.createElement('div');
 
-    function invalidateCache() {
-      cache = ReactCache.createCache(invalidateCache);
-    }
-    invalidateCache();
     TextResource = ReactCache.createResource(([text, ms = 0]) => {
       return new Promise((resolve, reject) =>
         setTimeout(() => {
@@ -59,7 +55,7 @@ describe('ReactDOMSuspensePlaceholder', () => {
 
   function AsyncText(props) {
     const text = props.text;
-    TextResource.read(cache, [props.text, props.ms]);
+    TextResource.read([props.text, props.ms]);
     return text;
   }
 
