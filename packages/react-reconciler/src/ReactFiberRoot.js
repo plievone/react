@@ -80,9 +80,9 @@ type BaseFiberRootProperties = {|
   // deferred. Also contains completion callbacks.
   // TODO: Lift this into the renderer
   firstBatch: Batch | null,
-
   // Linked-list of roots
   nextScheduledRoot: FiberRoot | null,
+
   // Linked-list of global roots. This is cross-renderer.
   nextGlobalRoot: FiberRoot | null,
   previousGlobalRoot: FiberRoot | null,

@@ -6,7 +6,6 @@ let Placeholder;
 
 // let JestReact;
 
-let cache;
 let TextResource;
 let textResourceShouldFail;
 
@@ -23,13 +22,8 @@ describe('ReactSuspense', () => {
     ReactTestRenderer = require('react-test-renderer');
     // JestReact = require('jest-react');
     ReactCache = require('react-cache');
-
     Placeholder = React.Placeholder;
 
-    function invalidateCache() {
-      cache = ReactCache.createCache(invalidateCache);
-    }
-    invalidateCache();
     TextResource = ReactCache.createResource(([text, ms = 0]) => {
       let listeners = null;
       let status = 'pending';
@@ -85,7 +79,7 @@ describe('ReactSuspense', () => {
   function AsyncText(props) {
     const text = props.text;
     try {
-      TextResource.read(cache, [props.text, props.ms]);
+      TextResource.read([props.text, props.ms]);
       ReactTestRenderer.unstable_yield(text);
       return text;
     } catch (promise) {

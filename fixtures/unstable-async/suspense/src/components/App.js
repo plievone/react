@@ -5,14 +5,13 @@ import {
   unstable_wrap as wrap,
 } from 'scheduler/tracing';
 import {createResource} from 'react-cache';
-import {cache} from '../cache';
 import Spinner from './Spinner';
 import ContributorListPage from './ContributorListPage';
 
 const UserPageResource = createResource(() => import('./UserPage'));
 
 function UserPageLoader(props) {
-  const UserPage = UserPageResource.read(cache).default;
+  const UserPage = UserPageResource.read().default;
   return <UserPage {...props} />;
 }
 

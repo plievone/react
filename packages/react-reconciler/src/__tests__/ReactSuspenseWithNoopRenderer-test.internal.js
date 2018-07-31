@@ -3,12 +3,12 @@ let ReactFeatureFlags;
 let Fragment;
 let ReactNoop;
 let ReactCache;
+let useCache;
 let Placeholder;
 let StrictMode;
 let ConcurrentMode;
 let lazy;
 
-let cache;
 let TextResource;
 let textResourceShouldFail;
 
@@ -26,15 +26,12 @@ describe('ReactSuspenseWithNoopRenderer', () => {
     Fragment = React.Fragment;
     ReactNoop = require('react-noop-renderer');
     ReactCache = require('react-cache');
+    useCache = ReactCache.useCache;
     Placeholder = React.Placeholder;
     StrictMode = React.StrictMode;
     ConcurrentMode = React.unstable_ConcurrentMode;
     lazy = React.lazy;
 
-    function invalidateCache() {
-      cache = ReactCache.createCache(invalidateCache);
-    }
-    invalidateCache();
     TextResource = ReactCache.createResource(([text, ms = 0]) => {
       return new Promise((resolve, reject) =>
         setTimeout(() => {
@@ -81,7 +78,7 @@ describe('ReactSuspenseWithNoopRenderer', () => {
   function AsyncText(props) {
     const text = props.text;
     try {
-      TextResource.read(cache, [props.text, props.ms]);
+      TextResource.read([props.text, props.ms]);
       ReactNoop.yield(text);
       return <span prop={text} />;
     } catch (promise) {
@@ -225,10 +222,12 @@ describe('ReactSuspenseWithNoopRenderer', () => {
   it('retries on error', async () => {
     class ErrorBoundary extends React.Component {
       state = {error: null};
+      cache = useCache();
       componentDidCatch(error) {
         this.setState({error});
       }
       reset() {
+        this.cache.purge();
         this.setState({error: null});
       }
       render() {
@@ -275,7 +274,6 @@ describe('ReactSuspenseWithNoopRenderer', () => {
 
     // Reset the error boundary and cache, and try again.
     errorBoundary.current.reset();
-    cache.invalidate();
 
     expect(ReactNoop.flush()).toEqual(['Suspend! [Result]']);
     ReactNoop.expire(1000);
@@ -287,10 +285,12 @@ describe('ReactSuspenseWithNoopRenderer', () => {
   it('retries on error after falling back to a placeholder', async () => {
     class ErrorBoundary extends React.Component {
       state = {error: null};
+      cache = useCache();
       componentDidCatch(error) {
         this.setState({error});
       }
       reset() {
+        this.cache.purge();
         this.setState({error: null});
       }
       render() {
@@ -343,7 +343,6 @@ describe('ReactSuspenseWithNoopRenderer', () => {
 
     // Reset the error boundary and cache, and try again.
     errorBoundary.current.reset();
-    cache.invalidate();
 
     expect(ReactNoop.flush()).toEqual(['Suspend! [Result]', 'Loading...']);
     ReactNoop.expire(3000);
@@ -1353,7 +1352,7 @@ describe('ReactSuspenseWithNoopRenderer', () => {
           super(props);
           const text = props.text;
           try {
-            TextResource.read(cache, [props.text, props.ms]);
+            TextResource.read([props.text, props.ms]);
             this.state = {text};
           } catch (promise) {
             if (typeof promise.then === 'function') {
@@ -1729,7 +1728,7 @@ describe('ReactSuspenseWithNoopRenderer', () => {
         const text = this.props.text;
         const ms = this.props.ms;
         try {
-          TextResource.read(cache, [text, ms]);
+          TextResource.read([text, ms]);
           ReactNoop.yield(text);
           return <span prop={text} />;
         } catch (promise) {

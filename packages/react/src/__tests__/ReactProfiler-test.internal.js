@@ -2151,7 +2151,6 @@ describe('Profiler', () => {
       let AsyncText;
       let Text;
       let TextResource;
-      let cache;
       let resourcePromise;
 
       function awaitableAdvanceTimers(ms) {
@@ -2172,10 +2171,7 @@ describe('Profiler', () => {
 
       beforeEach(() => {
         const ReactCache = require('react-cache');
-        function invalidateCache() {
-          cache = ReactCache.createCache(invalidateCache);
-        }
-        invalidateCache();
+        ReactCache.globalCache.purge();
 
         resourcePromise = null;
 
@@ -2191,7 +2187,7 @@ describe('Profiler', () => {
 
         AsyncText = ({ms, text}) => {
           try {
-            TextResource.read(cache, [text, ms]);
+            TextResource.read([text, ms]);
             yieldForRenderer(`AsyncText [${text}]`);
             return text;
           } catch (promise) {
@@ -2361,7 +2357,7 @@ describe('Profiler', () => {
 
           render() {
             const {ms, text} = this.props;
-            TextResource.read(cache, [text, ms]);
+            TextResource.read([text, ms]);
             return <span prop={text}>{this.state.hasMounted}</span>;
           }
         }
