@@ -80,6 +80,7 @@ import {
   readContext,
   prepareToReadContext,
   calculateChangedBits,
+  pushRootContexts,
 } from './ReactFiberNewContext';
 import {stopProfilerTimerIfRunning} from './ReactProfilerTimer';
 import {
@@ -552,6 +553,7 @@ function pushHostRootContext(workInProgress) {
     pushTopLevelContextObject(workInProgress, root.context, false);
   }
   pushHostContainer(workInProgress, root.containerInfo);
+  pushRootContexts(workInProgress);
 }
 
 function updateHostRoot(current, workInProgress, renderExpirationTime) {
@@ -565,15 +567,17 @@ function updateHostRoot(current, workInProgress, renderExpirationTime) {
   );
   const nextProps = workInProgress.pendingProps;
   const prevState = workInProgress.memoizedState;
-  const prevChildren = prevState !== null ? prevState.element : null;
+  const prevChildren = prevState.element;
   processUpdateQueue(
     workInProgress,
     updateQueue,
     nextProps,
-    null,
+    workInProgress,
     renderExpirationTime,
   );
+
   const nextState = workInProgress.memoizedState;
+
   // Caution: React DevTools currently depends on this property
   // being called "element".
   const nextChildren = nextState.element;
