@@ -7,16 +7,21 @@
  * @flow
  */
 
+import type {ReactContext} from 'shared/ReactTypes';
 import type {Fiber} from './ReactFiber';
 import type {ExpirationTime} from './ReactFiberExpirationTime';
 import type {TimeoutHandle, NoTimeout} from './ReactFiberHostConfig';
 import type {Interaction} from 'scheduler/src/Tracing';
 
+import ReactSharedInternals from 'shared/ReactSharedInternals';
 import {noTimeout} from './ReactFiberHostConfig';
 import {createHostRootFiber} from './ReactFiber';
 import {NoWork} from './ReactFiberExpirationTime';
 import {enableSchedulerTracing} from 'shared/ReactFeatureFlags';
 import {unstable_getThreadID} from 'scheduler/tracing';
+import {setRootContext} from './ReactFiberNewContext';
+
+const {ReactRootList} = ReactSharedInternals;
 
 // TODO: This should be lifted into the renderer.
 export type Batch = {
@@ -75,8 +80,20 @@ type BaseFiberRootProperties = {|
   // deferred. Also contains completion callbacks.
   // TODO: Lift this into the renderer
   firstBatch: Batch | null,
+
   // Linked-list of roots
   nextScheduledRoot: FiberRoot | null,
+  // Linked-list of global roots. This is cross-renderer.
+  nextGlobalRoot: FiberRoot | null,
+  previousGlobalRoot: FiberRoot | null,
+
+  // Schedules a context update.
+  setContext<T>(
+    context: ReactContext<T>,
+    oldValue: T,
+    newValue: T,
+    callback: () => mixed,
+  ): void,
 |};
 
 // The following attributes are only used by interaction tracing builds.
@@ -104,6 +121,8 @@ export function createFiberRoot(
   isConcurrent: boolean,
   hydrate: boolean,
 ): FiberRoot {
+  const lastGlobalRoot = ReactRootList.last;
+
   // Cyclic construction. This cheats the type system right now because
   // stateNode is any.
   const uninitializedFiber = createHostRootFiber(isConcurrent);
@@ -134,6 +153,10 @@ export function createFiberRoot(
       firstBatch: null,
       nextScheduledRoot: null,
 
+      nextGlobalRoot: null,
+      previousGlobalRoot: lastGlobalRoot,
+      setContext: (setRootContext.bind(null, uninitializedFiber): any),
+
       interactionThreadID: unstable_getThreadID(),
       memoizedInteractions: new Set(),
       pendingInteractionMap: new Map(),
@@ -162,10 +185,26 @@ export function createFiberRoot(
       expirationTime: NoWork,
       firstBatch: null,
       nextScheduledRoot: null,
+
+      nextGlobalRoot: null,
+      previousGlobalRoot: lastGlobalRoot,
+      setContext: (setRootContext.bind(null, uninitializedFiber): any),
     }: BaseFiberRootProperties);
   }
 
   uninitializedFiber.stateNode = root;
+  uninitializedFiber.memoizedState = {
+    element: null,
+    contexts: new Map(),
+  };
+
+  // Append to the global list of roots
+  if (lastGlobalRoot === null) {
+    ReactRootList.first = root;
+  } else {
+    lastGlobalRoot.nextGlobalRoot = root;
+  }
+  ReactRootList.last = root;
 
   // The reason for the way the Flow types are structured in this file,
   // Is to avoid needing :any casts everywhere interaction tracing fields are used.

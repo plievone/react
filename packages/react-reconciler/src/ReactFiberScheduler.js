@@ -119,7 +119,11 @@ import {
   popTopLevelContextObject as popTopLevelLegacyContextObject,
   popContext as popLegacyContext,
 } from './ReactFiberContext';
-import {popProvider, resetContextDependences} from './ReactFiberNewContext';
+import {
+  popProvider,
+  resetContextDependences,
+  popRootContexts,
+} from './ReactFiberNewContext';
 import {popHostContext, popHostContainer} from './ReactFiberHostContext';
 import {
   recordCommitTime,
@@ -301,6 +305,7 @@ if (__DEV__ && replayFailedUnitOfWorkWithInvokeGuardedCallback) {
       case HostRoot:
         popHostContainer(failedUnitOfWork);
         popTopLevelLegacyContextObject(failedUnitOfWork);
+        popRootContexts(failedUnitOfWork);
         break;
       case HostComponent:
         popHostContext(failedUnitOfWork);
