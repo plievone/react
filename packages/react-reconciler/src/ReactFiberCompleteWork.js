@@ -69,7 +69,7 @@ import {
   popContext as popLegacyContext,
   popTopLevelContextObject as popTopLevelLegacyContextObject,
 } from './ReactFiberContext';
-import {popProvider} from './ReactFiberNewContext';
+import {popProvider, popRootContexts} from './ReactFiberNewContext';
 import {
   prepareToHydrateHostInstance,
   prepareToHydrateHostTextInstance,
@@ -554,6 +554,7 @@ function completeWork(
     case HostRoot: {
       popHostContainer(workInProgress);
       popTopLevelLegacyContextObject(workInProgress);
+      popRootContexts(workInProgress);
       const fiberRoot = (workInProgress.stateNode: FiberRoot);
       if (fiberRoot.pendingContext) {
         fiberRoot.context = fiberRoot.pendingContext;

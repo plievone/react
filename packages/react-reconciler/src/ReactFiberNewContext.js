@@ -20,18 +20,19 @@ export type ContextDependency<T> = {
 
 import warningWithoutStack from 'shared/warningWithoutStack';
 import {isPrimaryRenderer} from './ReactFiberHostConfig';
+import {
+  scheduleWork,
+  computeExpirationForFiber,
+  requestCurrentTime,
+} from './ReactFiberScheduler';
 import {createCursor, push, pop} from './ReactFiberStack';
 import MAX_SIGNED_31_BIT_INT from './maxSigned31BitInt';
 import {NoWork} from './ReactFiberExpirationTime';
-import {ContextProvider, ClassComponent} from 'shared/ReactWorkTags';
+import {ContextProvider, ClassComponent, Update} from 'shared/ReactWorkTags';
+import {enqueueUpdate, createUpdate, ForceUpdate} from './ReactUpdateQueue';
 
 import invariant from 'shared/invariant';
 import warning from 'shared/warning';
-import {
-  createUpdate,
-  enqueueUpdate,
-  ForceUpdate,
-} from 'react-reconciler/src/ReactUpdateQueue';
 
 const valueCursor: StackCursor<mixed> = createCursor(null);
 
@@ -102,8 +103,8 @@ export function popProvider(providerFiber: Fiber): void {
 
 export function calculateChangedBits<T>(
   context: ReactContext<T>,
-  newValue: T,
   oldValue: T,
+  newValue: T,
 ) {
   // Use Object.is to compare the new context value to the old value. Inlined
   // Object.is polyfill.
@@ -133,9 +134,73 @@ export function calculateChangedBits<T>(
   }
 }
 
+export function setRootContext<T>(
+  fiber: Fiber,
+  context: ReactContext<T>,
+  currentValueAtTimeOfUpdate: T,
+  newValue: T,
+  callback: (() => mixed) | null,
+) {
+  // Schedule an update on the root.
+  const currentTime = requestCurrentTime();
+  const expirationTime = computeExpirationForFiber(currentTime, fiber);
+  const update = createUpdate(expirationTime);
+  const changedBits = calculateChangedBits(
+    context,
+    currentValueAtTimeOfUpdate,
+    newValue,
+  );
+  update.payload = function processUpdate(state) {
+    const workInProgress = this;
+    const baseContexts = state.contexts;
+    if (!baseContexts.has(context)) {
+      baseContexts.set(context, currentValueAtTimeOfUpdate);
+    }
+    if (isPrimaryRenderer) {
+      context._currentValue = newValue;
+    } else {
+      context._currentValue2 = newValue;
+    }
+    workInProgress.effectTag |= Update;
+    propagateContextChange(
+      workInProgress,
+      context,
+      changedBits,
+      expirationTime,
+    );
+    return null;
+  };
+  update.callback = callback;
+  enqueueUpdate(fiber, update);
+  scheduleWork(fiber, expirationTime);
+}
+
+export function pushRootContexts(workInProgress: Fiber): void {
+  const contexts = workInProgress.memoizedState.contexts;
+  contexts.forEach((value, context) => {
+    if (isPrimaryRenderer) {
+      context._currentValue = value;
+    } else {
+      context._currentValue2 = value;
+    }
+  });
+}
+
+export function popRootContexts(workInProgress: Fiber): void {
+  const contexts = workInProgress.memoizedState.contexts;
+  contexts.forEach((oldValue, context) => {
+    const globalValue = context._globalValue;
+    if (isPrimaryRenderer) {
+      context._currentValue = globalValue;
+    } else {
+      context._currentValue2 = globalValue;
+    }
+  });
+}
+
 export function propagateContextChange(
   workInProgress: Fiber,
-  context: ReactContext<mixed>,
+  context: ReactContext<any>,
   changedBits: number,
   renderExpirationTime: ExpirationTime,
 ): void {
@@ -219,7 +284,8 @@ export function propagateContextChange(
       } while (dependency !== null);
     } else if (fiber.tag === ContextProvider) {
       // Don't scan deeper if this is a matching provider
-      nextFiber = fiber.type === workInProgress.type ? null : fiber.child;
+      const providerContext: ReactContext<mixed> = fiber.type._context;
+      nextFiber = providerContext === context ? null : fiber.child;
     } else {
       // Traverse down.
       nextFiber = fiber.child;
